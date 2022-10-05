@@ -187,12 +187,19 @@ namespace NAudio.CoreAudioApi
                 {
                     GetPropertyInformation();
                 }
-                if (propertyStore.Contains(PropertyKeys.PKEY_Device_FriendlyName))
+                try
                 {
-                    return (string)propertyStore[PropertyKeys.PKEY_Device_FriendlyName].Value;
+                    if (propertyStore.Contains(PropertyKeys.PKEY_Device_FriendlyName))
+                    {
+                        return (string)propertyStore[PropertyKeys.PKEY_Device_FriendlyName].Value;
+                    }
+                    else
+                        return "Unknown";
                 }
-                else
-                    return "Unknown";
+                catch (Exception e)
+                {
+                    return $"Error:{e.Message}";
+                }
             }
         }
 

@@ -18,6 +18,8 @@ namespace NAudioDemo.VolumeMixerDemo
         private readonly bool devicePanel;
         private MMDevice device;
         private readonly AudioSessionControl session;
+        private MMDeviceEnumerator deviceEnumerator;
+        private NotificationClientImpl notificationClient;
 
         public MMDevice Device
         {
@@ -37,10 +39,73 @@ namespace NAudioDemo.VolumeMixerDemo
         public VolumePanel()
         {
             this.devicePanel = true;
-            var deviceEnumerator = new MMDeviceEnumerator();
+            /*var */deviceEnumerator = new MMDeviceEnumerator();
             device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            notificationClient = new NotificationClientImpl();
+            notificationClient.DefaultDeviceChanged += NotificationClient_DefaultDeviceChanged;
+            notificationClient.DeviceAdded += NotificationClient_DeviceAdded;
+            notificationClient.DeviceRemoved += NotificationClient_DeviceRemoved;
+            notificationClient.DeviceStateChanged += NotificationClient_DeviceStateChanged;
+            notificationClient.PropertyValueChanged += NotificationClient_PropertyValueChanged;
+            deviceEnumerator.RegisterEndpointNotificationCallback(notificationClient);
 
             InitializeComponent();
+
+            // will be triggered from mixer panel dispose, or btnUpdate
+            this.Disposed += VolumePanel_Disposed;
+        }
+
+        private void NotificationClient_DefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
+        {
+            var name = defaultDeviceId;
+            if (deviceEnumerator != null)
+            {
+                var dev = deviceEnumerator.GetDevice(defaultDeviceId);
+                name = dev.FriendlyName;
+            }
+            MessageBox.Show($"Default {flow},{role},{name} changed");
+        }
+
+        private void NotificationClient_DeviceAdded(string deviceId)
+        {
+            var name = deviceId;
+            if (deviceEnumerator != null)
+            {
+                var dev = deviceEnumerator.GetDevice(deviceId);
+                name = dev.FriendlyName;
+            }
+            MessageBox.Show($"Device {name} added");
+        }
+
+        private void NotificationClient_DeviceRemoved(string deviceId)
+        {
+            Debug.WriteLine($"removed {deviceId}");
+        }
+
+        private void NotificationClient_DeviceStateChanged(string deviceId, DeviceState newState)
+        {
+            Debug.WriteLine($"changed {deviceId}, {newState}");
+        }
+
+        private void NotificationClient_PropertyValueChanged(string deviceId, PropertyKey key)
+        {
+            Debug.WriteLine($"property {deviceId}, {key.propertyId}");
+        }
+
+        private void VolumePanel_Disposed(object sender, EventArgs e)
+        {
+            if (notificationClient != null)
+            {
+                if (deviceEnumerator != null)
+                    deviceEnumerator.UnregisterEndpointNotificationCallback(notificationClient);
+                notificationClient.Dispose();
+                notificationClient = null;
+            }
+            if (deviceEnumerator != null)
+            {
+                deviceEnumerator.Dispose();
+                deviceEnumerator = null;
+            }
         }
 
         /// <summary>
@@ -88,7 +153,7 @@ namespace NAudioDemo.VolumeMixerDemo
             if (devicePanel)
             {
                 cmbDevice.Visible = true;
-                var deviceEnumerator = new MMDeviceEnumerator();
+                //var deviceEnumerator = new MMDeviceEnumerator();
                 foreach (var d in deviceEnumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
                 {
                     cmbDevice.Items.Add(d);

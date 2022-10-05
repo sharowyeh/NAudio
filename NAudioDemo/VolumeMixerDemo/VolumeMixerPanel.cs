@@ -23,6 +23,9 @@ namespace NAudioDemo.VolumeMixerDemo
 
         private void btnUpdate_Click(object sender, EventArgs e)
         {
+            // for default audio endpoint device
+            if (DeviceVolumePanel != null)
+                DeviceVolumePanel.Dispose();
             DeviceVolumePanel = new VolumePanel();
             DeviceVolumePanel.DeviceChanged += DeviceVolumePanel_DeviceChanged;
             DeviceVolumePanel.MuteChanged += DeviceVolumePanel_MuteChanged;
@@ -51,7 +54,7 @@ namespace NAudioDemo.VolumeMixerDemo
             
             var sessions = device.AudioSessionManager.Sessions;
             if (sessions == null) return;
-            AppVolumePanels = new List<VolumePanel>(sessions.Count);
+            // makes system sounds session append at first of app panel
             for (int i = 0; i < sessions.Count; i++)
             {
                 var session = sessions[i];
